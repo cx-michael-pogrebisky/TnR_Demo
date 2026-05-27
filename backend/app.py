@@ -125,25 +125,3 @@ def internal_error(error):
                              error_details='An unexpected error occurred. Please try again later.',
                              request_id=request_id), 500
     return jsonify({'error': 'Internal server error', 'request_id': request_id}), 500
-
-@app.route('/admin')
-def admin_dashboard():
-    """Admin dashboard"""
-    from utils.request_context import get_request_context
-    ctx = get_request_context()
-    request_id = ctx.request_id if ctx and hasattr(ctx, 'request_id') else 'N/A'
-    
-    # Get data
-    users = User.query.all()
-    projects = Project.query.all()
-    tasks = Task.query.all()
-    
-    return render_template('admin.html',
-                         users=users,
-                         projects=projects,
-                         tasks=tasks,
-                         request_id=request_id)
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
-
