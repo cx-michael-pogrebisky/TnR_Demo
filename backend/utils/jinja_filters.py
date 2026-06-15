@@ -1,5 +1,5 @@
 # Jinja2 template filters
-from jinja2 import contextfilter
+from jinja2 import contextfilter, escape
 from datetime import datetime
 import hashlib
 
@@ -67,5 +67,7 @@ def role_badge(context, role):
         'team_member': 'secondary'
     }
     color = role_colors.get(role, 'secondary')
-    return f'<span class="badge badge-{color}">{role}</span>'
+    # Escape the role value to prevent XSS attacks
+    escaped_role = escape(role)
+    return f'<span class="badge badge-{color}">{escaped_role}</span>'
 
