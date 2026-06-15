@@ -3,25 +3,25 @@
 # Tests use SQLite in-memory database, so PostgreSQL is not required
 
 # Same versions as production
-Flask==2.2.5
+Flask==3.1.3
 Flask-SQLAlchemy==2.3.2
 SQLAlchemy==1.4.0
-Flask-CORS==3.0.7
+Flask-CORS==6.0.0
 Flask-JWT-Extended==3.13.1
-PyJWT==1.6.4
-Werkzeug==3.1.5
-python-dotenv==0.10.0
-requests==2.20.0
-lxml==4.2.5
-Pillow==5.2.0
-PyYAML==3.13
-Jinja2==2.11.3
+PyJWT==2.13.0
+Werkzeug==3.1.6
+python-dotenv==1.2.2
+requests==2.33.0
+lxml==6.1.0
+Pillow==12.2.0
+PyYAML==5.4
+Jinja2==3.1.6
 
 # Pin MarkupSafe to compatible version with Jinja2 2.11.3
 MarkupSafe==1.1.1
 
 # Testing frameworks (older versions for Python 3.7/3.8)
-pytest==6.2.5
+pytest==9.0.3
 pytest-cov==3.0.0
 pytest-flask==1.2.0
 
