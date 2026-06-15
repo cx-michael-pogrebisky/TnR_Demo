@@ -50,18 +50,15 @@ app.jinja_env.filters['role_badge'] = role_badge
 @app.before_request
 def init_request_context():
     """Initialize request context"""
-    from flask import _request_ctx_stack
-    ctx = _request_ctx_stack.top
-    if ctx is not None:
-        # Initialize request ID
-        _get_request_id()
-        # Set request start time
-        get_request_start_time()
-        # Store request metadata
-        set_request_metadata('ip_address', request.remote_addr)
-        set_request_metadata('user_agent', request.headers.get('User-Agent', 'Unknown'))
-        set_request_metadata('method', request.method)
-        set_request_metadata('path', request.path)
+    # Initialize request ID
+    _get_request_id()
+    # Set request start time
+    get_request_start_time()
+    # Store request metadata
+    set_request_metadata('ip_address', request.remote_addr)
+    set_request_metadata('user_agent', request.headers.get('User-Agent', 'Unknown'))
+    set_request_metadata('method', request.method)
+    set_request_metadata('path', request.path)
 
 # Register blueprints
 app.register_blueprint(auth.bp, url_prefix='/api/auth')
