@@ -61,6 +61,7 @@ jobs:
             --threshold "${{ inputs.threshold }}" \
             --report-formats json,sarif \
             --sca-report-formats json \
+            --sca-timeout 8m \
             --output-path reports
 
       - name: Summary
