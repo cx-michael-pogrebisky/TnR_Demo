@@ -1,8 +1,9 @@
 name: Checkmarx scan (manual)
 
 # Manual, on-demand Checkmarx scan of this repo with all five engines, run inside
-# the batteries-included cx-onprem-orchestrator fat image (every engine tool
-# bundled & digest-pinned). Triggered only via the Actions "Run workflow" button.
+# the batteries-included cx-onprem-orchestrator fat image. Engines run in PARALLEL
+# and the outcome is synced into a single run-summary.json. Triggered only via the
+# Actions "Run workflow" button.
 on:
   workflow_dispatch:
     inputs:
@@ -14,6 +15,10 @@ on:
         description: "cx-style gate; blank = report-only (secrets still fails on any secret)"
         default: "sast-critical=1;sca-critical=1;iac-security-high=1;secrets-total=1;containers-critical=1"
         required: false
+      sast_team:
+        description: "CxSAST team/full path for the project (CxSAST requires it)"
+        default: "CxServer/SP"
+        required: true
       runner:
         description: "Runner label (ubuntu-latest reaches the public CxSAST + Cx1)"
         default: "ubuntu-latest"
@@ -30,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - name: Checkmarx scan — all engines via the fat image
+      - name: Checkmarx scan — all engines in parallel via the fat image
         id: scan
         continue-on-error: true        # always reach the summary/upload; the verdict is in run-summary.json
         env:
@@ -41,6 +46,8 @@ jobs:
         run: |
           cx-onprem-orchestrator run \
             --scanners "${{ inputs.scanners }}" \
+            --parallel 8 \
+            --sast-team "${{ inputs.sast_team }}" \
             --threshold "${{ inputs.threshold }}" \
             --report-formats json,sarif \
             --output-path reports
