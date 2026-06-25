@@ -1,0 +1,62 @@
+name: Checkmarx scan (manual)
+
+# Manual, on-demand Checkmarx scan of this repo with all five engines, run inside
+# the batteries-included cx-onprem-orchestrator fat image (every engine tool
+# bundled & digest-pinned). Triggered only via the Actions "Run workflow" button.
+on:
+  workflow_dispatch:
+    inputs:
+      scanners:
+        description: "Engines to run (the cx --scan-types analog; only these run)"
+        default: "sast,sca,kics,secrets,containers"
+        required: true
+      threshold:
+        description: "cx-style gate; blank = report-only (secrets still fails on any secret)"
+        default: "sast-critical=1;sca-critical=1;iac-security-high=1;secrets-total=1;containers-critical=1"
+        required: false
+      runner:
+        description: "Runner label (ubuntu-latest reaches the public CxSAST + Cx1)"
+        default: "ubuntu-latest"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ${{ inputs.runner }}
+    container:
+      image: ghcr.io/cx-michael-pogrebisky/cx-onprem-orchestrator:fat
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Checkmarx scan — all engines via the fat image
+        id: scan
+        continue-on-error: true        # always reach the summary/upload; the verdict is in run-summary.json
+        env:
+          CX1_APIKEY:      ${{ secrets.CX1_APIKEY }}      # Cx1 (SCA + Container Security)
+          CXSAST_URL:      ${{ secrets.CXSAST_URL }}      # CxSAST -> -CxServer
+          CXSAST_USERNAME: ${{ secrets.CXSAST_USERNAME }} # CxSAST -> -CxUser
+          CXSAST_PASSWORD: ${{ secrets.CXSAST_PASSWORD }} # CxSAST -> -CxPassword
+        run: |
+          cx-onprem-orchestrator run \
+            --scanners "${{ inputs.scanners }}" \
+            --threshold "${{ inputs.threshold }}" \
+            --report-formats json,sarif \
+            --output-path reports
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "::group::run-summary.json"
+          cat reports/run-summary.json 2>/dev/null || echo "(no summary written)"
+          echo "::endgroup::"
+          echo "scan step outcome: ${{ steps.scan.outcome }}"
+
+      - name: Upload Checkmarx reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: checkmarx-reports
+          path: reports/
+          if-no-files-found: warn
