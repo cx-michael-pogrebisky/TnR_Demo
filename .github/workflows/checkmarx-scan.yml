@@ -35,6 +35,16 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
+      - name: Provision project build tools (SCA dependency resolution)
+        # SCA Resolver resolves THIS repo's dependencies LOCALLY, so the build
+        # environment must carry the project's language toolchains. The fat image
+        # intentionally bundles none (they vary per project) — install the ones
+        # this repo needs here. Runs as root inside the debian-based fat image.
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends nodejs npm python3 python3-pip
+          node --version && npm --version && python3 --version
+
       - name: Checkmarx scan — all engines in parallel via the fat image
         id: scan
         continue-on-error: true        # always reach the summary/upload; the verdict is in run-summary.json
@@ -50,6 +60,7 @@ jobs:
             --sast-team "${{ inputs.sast_team }}" \
             --threshold "${{ inputs.threshold }}" \
             --report-formats json,sarif \
+            --sca-report-formats json \
             --output-path reports
 
       - name: Summary
