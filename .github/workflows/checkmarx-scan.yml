@@ -60,9 +60,10 @@ jobs:
             --sast-team "${{ inputs.sast_team }}" \
             --threshold "${{ inputs.threshold }}" \
             --report-formats json,sarif \
-            --sca-report-formats json \
-            --sca-timeout 8m \
             --output-path reports
+          # Note: SCA and Container Security target the same Cx1 project here, so
+          # the orchestrator serializes them automatically (containers first, then
+          # sca) to avoid the backend failing one when both start together.
 
       - name: Summary
         if: always()
