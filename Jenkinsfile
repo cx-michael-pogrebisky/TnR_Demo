@@ -10,7 +10,7 @@ pipeline {
     stage('Checkmarx') {
       steps {
         checkout scm
-        bat 'cx-onprem-orchestrator.exe run --scanners all --threshold sast-critical=1 --output-path cxoo-reports --parallel 8 --sast-team CxServer --sca-resolver "c:\\cxoo\\SCAResolver.exe" --sast-path "c:\\cxoo" --kics-queries "c:\\cxoo\\queries"'
+        bat 'cx-onprem-orchestrator.exe run --scanners all --threshold sast-critical=1 --output-path cxoo-reports --parallel 8 --sast-team CxServer/SP --sca-resolver "c:\\cxoo\\SCAResolver.exe" --sast-path "c:\\cxoo" --kics-queries "c:\\cxoo\\queries"'
       }
     }
   }
