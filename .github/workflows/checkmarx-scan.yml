@@ -60,16 +60,17 @@ jobs:
             --sast-team "${{ inputs.sast_team }}" \
             --threshold "${{ inputs.threshold }}" \
             --report-formats json,sarif \
-            --output-path reports
-          # Note: SCA and Container Security target the same Cx1 project here, so
-          # the orchestrator serializes them automatically (containers first, then
-          # sca) to avoid the backend failing one when both start together.
+            --output-path "$RUNNER_TEMP/cxoo-reports"
+          # Reports are written to RUNNER_TEMP — OUTSIDE the scanned workspace — so the
+          # scanners never pick them up (e.g. 2ms re-finding its own secrets report).
+          # Note: SCA and Container Security target the same Cx1 project here, so the
+          # orchestrator serializes them automatically (containers first, then sca).
 
       - name: Summary
         if: always()
         run: |
           echo "::group::run-summary.json"
-          cat reports/run-summary.json 2>/dev/null || echo "(no summary written)"
+          cat "$RUNNER_TEMP/cxoo-reports/run-summary.json" 2>/dev/null || echo "(no summary written)"
           echo "::endgroup::"
           echo "scan step outcome: ${{ steps.scan.outcome }}"
 
@@ -78,5 +79,5 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: checkmarx-reports
-          path: reports/
+          path: ${{ runner.temp }}/cxoo-reports/
           if-no-files-found: warn
