@@ -9,8 +9,6 @@ from utils.logger import log_api_request, log_user_action
 from utils.request_context import get_request_context, get_request_metadata, request_id
 from utils.query_helpers import QueryHelper
 from utils.datetime_utils import get_utc_now
-from sqlalchemy import text
-
 bp = Blueprint('api', __name__)
 
 
@@ -23,16 +21,17 @@ def get_users():
     ip_address = get_request_metadata('ip_address', 'unknown')
     
     search = request.args.get('search', '')
-    
+
     if search:
-        query = f"SELECT * FROM users WHERE username LIKE '%{search}%' OR email LIKE '%{search}%'"
-        result = db.session.execute(text(query))
-        # Convert raw SQL results to dictionaries
-        users = [dict(row._mapping) for row in result]
+        # Use ORM parameterized LIKE to prevent SQL injection
+        users = User.query.filter(
+            User.username.like(f'%{search}%') |
+            User.email.like(f'%{search}%')
+        ).all()
     else:
         users = User.query.all()
-        # Convert User objects to dictionaries
-        users = [u.to_dict() for u in users]
+    # Convert User objects to dictionaries
+    users = [u.to_dict() for u in users]
     
     # Log API request
     log_api_request(None, '/api/v1/users', {'search': search, 'ip': ip_address})
@@ -169,12 +168,14 @@ def get_projects_api():
     status = request.args.get('status', '')
     
     if search:
-        query = f"SELECT * FROM projects WHERE name LIKE '%{search}%' OR description LIKE '%{search}%'"
-        result = db.session.execute(text(query))
-        projects = [dict(row) for row in result]
+        # Use ORM parameterized LIKE to prevent SQL injection
+        projects = Project.query.filter(
+            Project.name.like(f'%{search}%') |
+            Project.description.like(f'%{search}%')
+        ).all()
     else:
         projects = Project.query.all()
-    
+
     return jsonify({
         'projects': [p.to_dict() for p in projects]
     })
@@ -198,12 +199,15 @@ def get_project_tasks(project_id):
     status = request.args.get('status', '')
     
     if search:
-        query = f"SELECT * FROM tasks WHERE project_id = {project_id} AND (title LIKE '%{search}%' OR description LIKE '%{search}%')"
-        result = db.session.execute(text(query))
-        tasks = [dict(row) for row in result]
+        # Use ORM parameterized LIKE to prevent SQL injection
+        tasks = Task.query.filter(
+            Task.project_id == project_id,
+            Task.title.like(f'%{search}%') |
+            Task.description.like(f'%{search}%')
+        ).all()
     else:
         tasks = Task.query.filter_by(project_id=project_id).all()
-    
+
     return jsonify({
         'tasks': [t.to_dict() for t in tasks]
     })
@@ -216,20 +220,23 @@ def get_tasks_api():
     assigned_to = request.args.get('assigned_to')
     
     if search:
-        query = "SELECT * FROM tasks WHERE title LIKE '%{}%' OR description LIKE '%{}%'".format(search, search)
+        # Use ORM parameterized LIKE to prevent SQL injection
+        orm_query = Task.query.filter(
+            Task.title.like(f'%{search}%') |
+            Task.description.like(f'%{search}%')
+        )
         if project_id:
-            query += f" AND project_id = {project_id}"
+            orm_query = orm_query.filter_by(project_id=project_id)
         if assigned_to:
-            query += f" AND assigned_to = {assigned_to}"
-        result = db.session.execute(text(query))
-        tasks = [dict(row) for row in result]
+            orm_query = orm_query.filter_by(assigned_to=assigned_to)
+        tasks = orm_query.all()
     else:
-        query = Task.query
+        orm_query = Task.query
         if project_id:
-            query = query.filter_by(project_id=project_id)
+            orm_query = orm_query.filter_by(project_id=project_id)
         if assigned_to:
-            query = query.filter_by(assigned_to=assigned_to)
-        tasks = query.all()
+            orm_query = orm_query.filter_by(assigned_to=assigned_to)
+        tasks = orm_query.all()
     
     return jsonify({
         'tasks': [t.to_dict() for t in tasks]
@@ -351,23 +358,32 @@ def global_search():
     }
     
     try:
-        user_query = f"SELECT * FROM users WHERE username LIKE '%{query}%' OR email LIKE '%{query}%'"
-        user_result = db.session.execute(text(user_query))
-        results['users'] = [dict(row) for row in user_result]
+        # Use ORM parameterized LIKE to prevent SQL injection
+        user_results = User.query.filter(
+            User.username.like(f'%{query}%') |
+            User.email.like(f'%{query}%')
+        ).all()
+        results['users'] = [u.to_dict() for u in user_results]
     except:
         pass
-    
+
     try:
-        project_query = f"SELECT * FROM projects WHERE name LIKE '%{query}%' OR description LIKE '%{query}%'"
-        project_result = db.session.execute(text(project_query))
-        results['projects'] = [dict(row) for row in project_result]
+        # Use ORM parameterized LIKE to prevent SQL injection
+        project_results = Project.query.filter(
+            Project.name.like(f'%{query}%') |
+            Project.description.like(f'%{query}%')
+        ).all()
+        results['projects'] = [p.to_dict() for p in project_results]
     except:
         pass
-    
+
     try:
-        task_query = f"SELECT * FROM tasks WHERE title LIKE '%{query}%' OR description LIKE '%{query}%'"
-        task_result = db.session.execute(text(task_query))
-        results['tasks'] = [dict(row) for row in task_result]
+        # Use ORM parameterized LIKE to prevent SQL injection
+        task_results = Task.query.filter(
+            Task.title.like(f'%{query}%') |
+            Task.description.like(f'%{query}%')
+        ).all()
+        results['tasks'] = [t.to_dict() for t in task_results]
     except:
         pass
     
