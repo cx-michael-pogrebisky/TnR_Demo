@@ -6,7 +6,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import Task, Comment, Project, User, db
 from auth import require_auth, get_current_user
 from utils.logger import log_user_action
-from sqlalchemy import text
 from datetime import datetime
 
 bp = Blueprint('tasks', __name__)
@@ -23,20 +22,23 @@ def get_tasks():
     assigned_to = request.args.get('assigned_to')
     
     if search:
-        query = f"SELECT * FROM tasks WHERE title LIKE '%{search}%' OR description LIKE '%{search}%'"
+        # Use ORM parameterized LIKE to prevent SQL injection
+        orm_query = Task.query.filter(
+            Task.title.like(f'%{search}%') |
+            Task.description.like(f'%{search}%')
+        )
         if project_id:
-            query += f" AND project_id = {project_id}"
-        result = db.session.execute(text(query))
-        tasks = [dict(row) for row in result]
+            orm_query = orm_query.filter_by(project_id=project_id)
+        tasks = orm_query.all()
     else:
-        query = Task.query
+        orm_query = Task.query
         if project_id:
-            query = query.filter_by(project_id=project_id)
+            orm_query = orm_query.filter_by(project_id=project_id)
         if status:
-            query = query.filter_by(status=status)
+            orm_query = orm_query.filter_by(status=status)
         if assigned_to:
-            query = query.filter_by(assigned_to=assigned_to)
-        tasks = query.all()
+            orm_query = orm_query.filter_by(assigned_to=assigned_to)
+        tasks = orm_query.all()
     
     return jsonify({
         'tasks': [t.to_dict() for t in tasks]

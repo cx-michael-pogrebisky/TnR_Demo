@@ -6,7 +6,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import Project, User, db
 from auth import require_auth, get_current_user
 from utils.logger import log_user_action
-from sqlalchemy import text
 
 bp = Blueprint('projects', __name__)
 
@@ -20,9 +19,11 @@ def get_projects():
     status_filter = request.args.get('status', '')
     
     if search:
-        query = f"SELECT * FROM projects WHERE name LIKE '%{search}%' OR description LIKE '%{search}%'"
-        result = db.session.execute(text(query))
-        projects = [dict(row) for row in result]
+        # Use ORM parameterized LIKE to prevent SQL injection
+        projects = Project.query.filter(
+            Project.name.like(f'%{search}%') |
+            Project.description.like(f'%{search}%')
+        ).all()
     else:
         projects = Project.query.all()
     
