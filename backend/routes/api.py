@@ -169,12 +169,18 @@ def get_projects_api():
     status = request.args.get('status', '')
     
     if search:
-        query = f"SELECT * FROM projects WHERE name LIKE '%{search}%' OR description LIKE '%{search}%'"
-        result = db.session.execute(text(query))
-        projects = [dict(row) for row in result]
+        # Use parameterized query to prevent SQL injection: bind :search as a
+        # named parameter so the database driver handles quoting/escaping.
+        search_param = f"%{search}%"
+        projects = Project.query.filter(
+            db.or_(
+                Project.name.like(search_param),
+                Project.description.like(search_param)
+            )
+        ).all()
     else:
         projects = Project.query.all()
-    
+
     return jsonify({
         'projects': [p.to_dict() for p in projects]
     })
